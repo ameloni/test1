@@ -1,0 +1,79 @@
+clear, clc
+format compact
+
+
+% Select zip files %#ok<WNOFF>
+[zipfiles, zippath] = uigetfile('C:\Users\Andrew.Meloni\Downloads\*.zip','Multiselect','On');
+
+% Catch if no files selected
+if ~iscell(zipfiles)
+    disp('No files selected')
+    return
+end
+
+% Preset fail list
+FailList = [];
+BadNameList = [];
+
+% Create destination path
+unzipdir = 'C:\Users\Andrew.Meloni\All Server Data\2) Ready for Sorting & Analysis\';
+mkdir(unzipdir);
+
+% Gether number of files
+nfiles = length(zipfiles);
+
+% Initialize counters
+failcount = 0;
+badnamecount = 0;
+completecount = 0;
+
+for ii = 1:nfiles
+    try
+        % create destination dir as name of original zip file
+        tempSplit = regexp(zipfiles{1,ii},'\.','split');
+        destdir = strcat(unzipdir,tempSplit{1});
+        % get zip file name
+        CurZipFile = strcat(zippath,zipfiles{1,ii});
+        
+        % Check bad zip file name
+        GoodPat = '\d\d\d\d-\d\d-\d\d_\w*_\d\d\d';
+        ZipNameCheck = regexp(zipfiles{1,ii},GoodPat);
+        
+        % If zip file has a bad name, identify that
+        if isempty(ZipNameCheck)
+            strcat(zipfiles{1,ii},' has a bad name')
+            badnamecount = badnamecount + 1;
+            BadNameList{badnamecount,1} = zipfiles{1,ii};
+        end
+        
+        % Unzip the file
+        unzip(CurZipFile,destdir);
+        % Print complete message and count
+        sprintf('%s',strcat(zipfiles{1,ii},' is complete'))
+        completecount = completecount + 1;
+        sprintf('%s',num2str(completecount+failcount),' of ',num2str(nfiles),' files complete')
+    catch
+        % If zip file is corrupt, indicate that
+        strcat(zipfiles{1,ii},' has failed')
+        failcount = failcount + 1
+        FailList{failcount,1} = zipfiles{1,ii};
+        rmdir(destdir);     % remove directory to avoid empty dirs
+        continue
+    end
+end
+% Show completed and summary of results
+sprintf('All files complete: %d successful, %d failed', completecount, failcount)
+% Show list of failed files
+if isempty(FailList)
+    sprintf('No files failed')
+else
+    FailList
+end
+% Show list of bad names
+if isempty(BadNameList)
+    sprintf('No bad names')
+else
+    BadNameList
+end
+
+
